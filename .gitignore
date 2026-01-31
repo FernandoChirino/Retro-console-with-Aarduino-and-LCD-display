@@ -1,0 +1,36 @@
+# ===== Arduino build files =====
+*.elf
+*.hex
+*.bin
+*.map
+*.eep
+
+# ===== Arduino IDE temporary files =====
+*.tmp
+*.log
+
+# ===== Arduino IDE 2.x =====
+.arduinoIDE/
+.arduinoIDE.json
+
+# ===== VS Code (if you use it) =====
+.vscode/
+*.code-workspace
+
+# ===== PlatformIO (optional) =====
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# ===== OS junk =====
+.DS_Store
+Thumbs.db
+
+# ===== Compiled C/C++ leftovers =====
+*.o
+*.a
+*.d
+
+# ===== Backup files =====
+*~
+*.bak
