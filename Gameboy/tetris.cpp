@@ -1,7 +1,7 @@
 #include "tetris.h"
 #include <Arduino.h>
 
-// Forward declarations (declare all functions before using them)
+// Forward declarations 
 void checkLines();
 void breakLine(short line);
 void drawGrid();

@@ -2,6 +2,7 @@
 #include <Adafruit_ST7735.h>
 #include <SPI.h>
 #include "tetris.h"
+#include "dodge.h"
 
 // ST7735 Display pins
 #define TFT_CS     53  // Chip Select
@@ -22,7 +23,7 @@ enum GameState {
   MENU,
   TETRIS,
   SNAKE,
-  DOGEBLOCK  // Add more games here
+  DODGEBLOCK  // Add more games here
 };
 
 GameState currentState = MENU; // Current active screen/game
@@ -83,7 +84,7 @@ void drawMenuItem(int itemIndex) {
       break;
     case 2:
       tft.setCursor(30, yPos + 2);
-      tft.print("3. DODGE BLOCK");
+      tft.print("3. DODGE MARIO");
       break;
   }
 }
@@ -125,13 +126,14 @@ void handleMenu() {
         currentState = TETRIS;
         tetrisSetup();
         break;
-      // Add more cases for other games
-      /*
       case 1:
-        currentState = GAME2;
-        game2Setup();
+        currentState = SNAKE;
+        //game2Setup();
         break;
-      */
+      case 2:
+        currentState = DODGEBLOCK;
+        dodgeSetup();
+        break;
     }
   }
 }
@@ -184,7 +186,15 @@ void loop() {
         drawMenu();
       }
       break;
-      
+
+    case DODGEBLOCK:
+      dodgeLoop();
+      if (dodgeCheckReturnToMenu()) {
+        currentState = MENU;
+        drawMenu();
+      }
+      break;
+
     // Add more game cases here
     /*
     case SNAKE:
