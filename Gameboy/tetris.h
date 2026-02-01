@@ -14,5 +14,6 @@ extern Adafruit_ST7735 tft;
 extern const int joyX;
 extern const int joyY;
 extern const int joyButton;
+extern const int button;
 
 #endif

@@ -12,6 +12,7 @@
 const int joyX = A0;     
 const int joyY = A1;     
 const int joyButton = 2; 
+const int button = 27;
 
 // Initialize display
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
@@ -20,12 +21,13 @@ Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 enum GameState {
   MENU,
   TETRIS,
-  GAME2,  // Add more games here
+  SNAKE,
+  DOGEBLOCK  // Add more games here
 };
 
 GameState currentState = MENU; // Current active screen/game
 int menuSelection = 0;          // Currently highlighted menu item
-const int NUM_GAMES = 2;        // Number of playable games
+const int NUM_GAMES = 3;        // Number of playable games
 unsigned long lastMenuMove = 0; // Debounce timer for menu navigation
 const int MENU_DELAY = 200;     // Minimum time between menu moves (ms)
 const int JOY_THRESHOLD = 200;  // Joystick deadzone threshold
@@ -44,13 +46,13 @@ void drawMenu() {
   // Instructions
   tft.setTextColor(ST7735_YELLOW);
   tft.setTextSize(1);
-  tft.setCursor(10, 110);
+  tft.setCursor(10, 120);
   tft.print("Move to select");
   
   // Draw all menu items
   drawMenuItem(0);
   drawMenuItem(1);
-  // drawMenuItem(2);
+  drawMenuItem(2);
 }
 
 void drawMenuItem(int itemIndex) {
@@ -75,17 +77,14 @@ void drawMenuItem(int itemIndex) {
       tft.setCursor(30, yPos + 2);
       tft.print("1. TETRIS");
       break;
-    // Add more games here
     case 1:
       tft.setCursor(30, yPos + 2);
       tft.print("2. SNAKE");
       break;
-    /*
     case 2:
       tft.setCursor(30, yPos + 2);
-      tft.print("3. PONG");
+      tft.print("3. DODGE BLOCK");
       break;
-    */
   }
 }
 
@@ -94,7 +93,7 @@ void handleMenu() {
   
   // Navigate menu
   if (millis() - lastMenuMove > MENU_DELAY) {
-    if (y < 512 - JOY_THRESHOLD) {  // Up
+    if (y > 512 + JOY_THRESHOLD) {  // Up
       int oldSelection = menuSelection;
       menuSelection--;
       if (menuSelection < 0) menuSelection = NUM_GAMES - 1;
@@ -104,7 +103,7 @@ void handleMenu() {
       drawMenuItem(menuSelection);
       
       lastMenuMove = millis();
-    } else if (y > 512 + JOY_THRESHOLD) {  // Down
+    } else if (y < 512 - JOY_THRESHOLD) {  // Down
       int oldSelection = menuSelection;
       menuSelection++;
       if (menuSelection >= NUM_GAMES) menuSelection = 0;
@@ -118,7 +117,7 @@ void handleMenu() {
   }
   
   // Select game
-  if (!digitalRead(joyButton)) {
+  if (!digitalRead(joyButton) || !digitalRead(button)) {
     delay(300);  // Debounce
     
     switch (menuSelection) {
@@ -141,6 +140,7 @@ void setup() {
   Serial.begin(9600);
   
   pinMode(joyButton, INPUT_PULLUP);
+  pinMode(button, INPUT_PULLUP);
   
   // Initialize display
   tft.initR(INITR_144GREENTAB);
@@ -163,6 +163,14 @@ void setup() {
 }
 
 void loop() {
+  /*
+  Serial.print("X: ");
+  Serial.print(analogRead(joyX));
+  Serial.print("\t");
+  Serial.print("Y: ");
+  Serial.println(analogRead(joyY));
+  */
+
   switch (currentState) {
     case MENU:
       handleMenu();
@@ -179,7 +187,7 @@ void loop() {
       
     // Add more game cases here
     /*
-    case GAME2:
+    case SNAKE:
       game2Loop();
       break;
     */

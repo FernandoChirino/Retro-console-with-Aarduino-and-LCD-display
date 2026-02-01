@@ -421,7 +421,7 @@ void tetrisLoop() {
   if (gameOver) {
     if (!digitalRead(joyButton) || analogRead(joyY) < 512 - JOY_THRESHOLD || 
         analogRead(joyY) > 512 + JOY_THRESHOLD || analogRead(joyX) < 512 - JOY_THRESHOLD || 
-        analogRead(joyX) > 512 + JOY_THRESHOLD) {
+        analogRead(joyX) > 512 + JOY_THRESHOLD || !digitalRead(button)) {
       delay(500);
       returnToMenu = true;
     }
@@ -458,13 +458,13 @@ void tetrisLoop() {
   
   // Handle horizontal movement
   if (millis() - lastMoveTime > MOVE_DELAY) {
-    if (x < 512 - JOY_THRESHOLD) {  // Move left
+    if (x > 512 + JOY_THRESHOLD) {  // Move left
       if (!nextHorizontalCollision(piece, -1)) {
         pieceX--;
         updatePiece();
         lastMoveTime = millis();
       }
-    } else if (x > 512 + JOY_THRESHOLD) {  // Move right
+    } else if (x < 512 - JOY_THRESHOLD) {  // Move right
       if (!nextHorizontalCollision(piece, 1)) {
         pieceX++;
         updatePiece();
@@ -473,14 +473,14 @@ void tetrisLoop() {
     }
     
     // Soft drop: accelerate on down joystick
-    if (y > 512 + JOY_THRESHOLD) {
+    if (y < 512 - JOY_THRESHOLD) {
       interval = 50;
     } else {
       interval = 400;
     }
   }
   
-  if (!digitalRead(joyButton) || y < 512 - JOY_THRESHOLD) {
+  if (!digitalRead(joyButton) || y > 512 + JOY_THRESHOLD || !digitalRead(button)) {
     if (b3) {
       short newRotation = rotation;
       
