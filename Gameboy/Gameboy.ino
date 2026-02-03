@@ -1,10 +1,10 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
 #include <SPI.h>
-#include "tetris.h"
-#include "dodge.h"
-#include "global.h"
-#include "SnakeGame.h"
+#include "src/tetris/tetris.h"
+#include "src/dodge/dodge.h"
+#include "src/pacman/global.h"
+#include "src/snake/SnakeGame.h"
 
 // External functions from main.cpp
 extern void pacmanGameSetup();
@@ -46,9 +46,9 @@ void drawMenu() {
   // Title
   tft.setTextColor(ST7735_CYAN);
   tft.setTextSize(2);
-  tft.setCursor(15, 20);
+  tft.setCursor(15, 10);
   tft.print("RETRO");
-  tft.setCursor(10, 38);
+  tft.setCursor(10, 27);
   tft.print("CONSOLE");
   
   // Instructions
@@ -61,10 +61,11 @@ void drawMenu() {
   drawMenuItem(0);
   drawMenuItem(1);
   drawMenuItem(2);
+  drawMenuItem(3);
 }
 
 void drawMenuItem(int itemIndex) {
-  int yPos = 70 + (itemIndex * 15);  // 15 pixels spacing between items
+  int yPos = 45 + (itemIndex * 15);  // 15 pixels spacing between items
   
   // Clear the item area
   tft.fillRect(10, yPos, 108, 12, ST7735_BLACK);
@@ -145,10 +146,10 @@ void handleMenu() {
         currentState = DODGEBLOCK;
         dodgeSetup();
         break;
-     case 3:
-      currentState = SNAKE;
-      setupSnakeGame();
-      break;
+      case 3:
+        currentState = SNAKE;
+        setupSnakeGame();
+        break;
     }
   }
 }
@@ -161,7 +162,7 @@ void setup() {
   
   // Initialize display
   tft.initR(INITR_144GREENTAB);
-  tft.setRotation(4);
+  tft.setRotation(4); // change to 4
   
   // Show splash screen
   tft.fillScreen(ST7735_BLACK);
@@ -180,14 +181,13 @@ void setup() {
 }
 
 void loop() {
-  /*
-  Serial.print("X: ");
-  Serial.print(analogRead(joyX));
-  Serial.print("\t");
-  Serial.print("Y: ");
-  Serial.println(analogRead(joyY));
-  */
-
+  
+  // Serial.print("X: ");
+  // Serial.print(analogRead(joyX));
+  // Serial.print("\t");
+  // Serial.print("Y: ");
+  // Serial.println(analogRead(joyY));
+  
   switch (currentState) {
     case MENU:
       handleMenu();
@@ -220,11 +220,12 @@ void loop() {
       break;
 
    case SNAKE:
-   if (loopSnakeGame() == false)
-   {
-    currentState = MENU;
-    drawMenu();
-   }
-    break;
+    if (loopSnakeGame() == false)
+    {
+      currentState = MENU;
+      drawMenu();
+    }
+      break;
+      
   }
 }

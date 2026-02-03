@@ -427,6 +427,11 @@ void tetrisLoop() {
     }
     return;
   }
+
+  if(!digitalRead(joyButton)){
+    returnToMenu = true;
+    return;
+  }
   
   if (millis() - timer > interval) {
     checkLines();
@@ -480,7 +485,7 @@ void tetrisLoop() {
     }
   }
   
-  if (!digitalRead(joyButton) || y > 512 + JOY_THRESHOLD || !digitalRead(button)) {
+  if (y > 512 + JOY_THRESHOLD || !digitalRead(button)) {
     if (b3) {
       short newRotation = rotation;
       

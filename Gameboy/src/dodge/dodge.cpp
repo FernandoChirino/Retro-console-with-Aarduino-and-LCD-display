@@ -279,61 +279,66 @@ void dodgeSetup() {
 
 void dodgeLoop() {
   if (dodgeGameOver) {
-      if (!digitalRead(joyButton) || analogRead(joyY) < JOY_CENTER - JOY_THRESHOLD || 
-          analogRead(joyY) > JOY_CENTER + JOY_THRESHOLD || analogRead(joyX) < JOY_CENTER - JOY_THRESHOLD || 
-          analogRead(joyX) > JOY_CENTER + JOY_THRESHOLD || !digitalRead(button)) {
-        delay(500);
-        dodgeReturnToMenu = true;
+    if (!digitalRead(joyButton) || analogRead(joyY) < JOY_CENTER - JOY_THRESHOLD || 
+        analogRead(joyY) > JOY_CENTER + JOY_THRESHOLD || analogRead(joyX) < JOY_CENTER - JOY_THRESHOLD || 
+        analogRead(joyX) > JOY_CENTER + JOY_THRESHOLD || !digitalRead(button)) {
+      delay(500);
+      dodgeReturnToMenu = true;
+    }
+    return;
+  }
+
+  if (!digitalRead(joyButton)){
+    dodgeReturnToMenu = true;
+    return;
+  }
+    
+  unsigned long currentTime = millis();
+    
+  // Update at 30-40 FPS (approx 25-30ms) for better stability 
+  if (currentTime - lastUpdate >= 25) { 
+    lastUpdate = currentTime;
+
+    int joyXVal = analogRead(joyX);
+    int nextX = playerX;
+    
+    if (joyXVal > JOY_CENTER + JOY_THRESHOLD) {
+      nextX -= PLAYER_SPEED;
+      if (nextX < 0) nextX = 0;
+    } else if (joyXVal < JOY_CENTER - JOY_THRESHOLD) {
+      nextX += PLAYER_SPEED;
+      if (nextX > GAME_WIDTH - cat_width) nextX = GAME_WIDTH - cat_width;
+    }
+
+    // Update player only if position changed
+    if (nextX != playerX) {
+      int oldX = playerX;
+      playerX = nextX;
+      drawPlayer();
+      // Erase the area player moved away from
+      if (nextX > oldX) {
+        tft.fillRect(oldX, playerY, nextX - oldX, cat_height, ST7735_BLACK);
+      } else {
+        tft.fillRect(nextX + cat_width, playerY, oldX - nextX, cat_height, ST7735_BLACK);
       }
+    } else {
+      drawPlayer();
+    }
+    
+    updateEnemies();
+    renderEnemies();
+    
+    if (checkCollision()) {
+      showDodgeGameOver();
       return;
     }
-    
-    unsigned long currentTime = millis();
-    
-    // Update at 30-40 FPS (approx 25-30ms) for better stability 
-    if (currentTime - lastUpdate >= 25) { 
-      lastUpdate = currentTime;
+    updateDodgeScore();
+  }
 
-      int joyXVal = analogRead(joyX);
-      int nextX = playerX;
-      
-      if (joyXVal > JOY_CENTER + JOY_THRESHOLD) {
-        nextX -= PLAYER_SPEED;
-        if (nextX < 0) nextX = 0;
-      } else if (joyXVal < JOY_CENTER - JOY_THRESHOLD) {
-        nextX += PLAYER_SPEED;
-        if (nextX > GAME_WIDTH - cat_width) nextX = GAME_WIDTH - cat_width;
-      }
-
-      // Update player only if position changed
-      if (nextX != playerX) {
-        int oldX = playerX;
-        playerX = nextX;
-        drawPlayer();
-        // Erase the area player moved away from
-        if (nextX > oldX) {
-          tft.fillRect(oldX, playerY, nextX - oldX, cat_height, ST7735_BLACK);
-        } else {
-          tft.fillRect(nextX + cat_width, playerY, oldX - nextX, cat_height, ST7735_BLACK);
-        }
-      } else {
-        drawPlayer();
-      }
-      
-      updateEnemies();
-      renderEnemies();
-      
-      if (checkCollision()) {
-        showDodgeGameOver();
-        return;
-      }
-      updateDodgeScore();
-    }
-
-    if (currentTime - lastSpawn > spawnInterval) {
-      spawnEnemy();
-      lastSpawn = currentTime;
-    }
+  if (currentTime - lastSpawn > spawnInterval) {
+    spawnEnemy();
+    lastSpawn = currentTime;
+  }
 }
 
 bool dodgeCheckReturnToMenu() {
