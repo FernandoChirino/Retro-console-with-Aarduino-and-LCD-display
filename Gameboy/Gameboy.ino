@@ -5,6 +5,7 @@
 #include "src/dodge/dodge.h"
 #include "src/pacman/global.h"
 #include "src/snake/SnakeGame.h"
+#include "src/breakout/breakout.h"
 
 // External functions from main.cpp
 extern void pacmanGameSetup();
@@ -30,48 +31,90 @@ enum GameState {
   TETRIS,
   PACMAN,
   DODGEBLOCK,
-  SNAKE
+  SNAKE,
+  BREAKOUT,
+  SPACE_INVADERS
 };
 
-GameState currentState = MENU; // Current active screen/game
-int menuSelection = 0;          // Currently highlighted menu item
-const int NUM_GAMES = 4;        // Number of playable games
-unsigned long lastMenuMove = 0; // Debounce timer for menu navigation
-const int MENU_DELAY = 200;     // Minimum time between menu moves (ms)
-const int JOY_THRESHOLD = 200;  // Joystick deadzone threshold
+GameState currentState = MENU;
+int menuSelection = 0;
+const int NUM_GAMES = 6;
+const int GAMES_PER_PAGE = 4;  // How many games to show per page
+int currentPage = 0;            // Current page index
+const int NUM_PAGES = (NUM_GAMES + GAMES_PER_PAGE - 1) / GAMES_PER_PAGE;  // Calculate total pages
+
+unsigned long lastMenuMove = 0;
+const int MENU_DELAY = 200;
+const int JOY_THRESHOLD = 200;
+
+// Game names array 
+const char* gameNames[] = {
+  "1. TETRIS",
+  "2. PACMAN",
+  "3. DODGE MARIO",
+  "4. SNAKE",
+  "5. BREAKOUT",
+  "6. SPACE INVADER",
+}; 
 
 void drawMenu() {
   tft.fillScreen(ST7735_BLACK);
-  
+
   // Title
   tft.setTextColor(ST7735_CYAN);
   tft.setTextSize(2);
-  tft.setCursor(15, 10);
+  tft.setCursor(15, 5);
   tft.print("RETRO");
-  tft.setCursor(10, 27);
+  tft.setCursor(10, 22);
   tft.print("CONSOLE");
+
+  // Page indicator
+  tft.setTextColor(ST7735_GREEN);
+  tft.setTextSize(1);
+  tft.setCursor(45, 40);
+  tft.print("Page ");
+  tft.print(currentPage + 1);
+  tft.print("/");
+  tft.print(NUM_PAGES);
+  
+  // Draw navigation arrows
+  if (currentPage > 0) {
+    tft.setTextColor(ST7735_YELLOW);
+    tft.setCursor(10, 40);
+    tft.print("<");
+  }
+  if (currentPage < NUM_PAGES - 1) {
+    tft.setTextColor(ST7735_YELLOW);
+    tft.setCursor(110, 40);
+    tft.print(">");
+  }
   
   // Instructions
   tft.setTextColor(ST7735_YELLOW);
   tft.setTextSize(1);
-  tft.setCursor(10, 120);
-  tft.print("Move to select");
+  tft.setCursor(5, 115);
+  tft.print("Up/Down   Left/Right");
   
-  // Draw all menu items
-  drawMenuItem(0);
-  drawMenuItem(1);
-  drawMenuItem(2);
-  drawMenuItem(3);
+  // Draw menu items for current page
+  int startGame = currentPage * GAMES_PER_PAGE;
+  int endGame = min(startGame + GAMES_PER_PAGE, NUM_GAMES);
+  
+  for (int i = startGame; i < endGame; i++) {
+    drawMenuItem(i);
+  }
 }
 
-void drawMenuItem(int itemIndex) {
-  int yPos = 45 + (itemIndex * 15);  // 15 pixels spacing between items
+
+void drawMenuItem(int gameIndex) {
+  // Calculate position relative to current page
+  int positionOnPage = gameIndex - (currentPage * GAMES_PER_PAGE);
+  int yPos = 55 + (positionOnPage * 15);  // 15 pixels spacing between items
   
   // Clear the item area
   tft.fillRect(10, yPos, 108, 12, ST7735_BLACK);
   
   // Draw selection highlight
-  if (menuSelection == itemIndex) {
+  if (menuSelection == gameIndex) {
     tft.fillRect(10, yPos, 108, 12, ST7735_WHITE);
     tft.setTextColor(ST7735_BLACK);
   } else {
@@ -79,53 +122,76 @@ void drawMenuItem(int itemIndex) {
   }
   
   tft.setTextSize(1);
-  
-  // Draw the appropriate game name
-  switch (itemIndex) {
-    case 0:
-      tft.setCursor(30, yPos + 2);
-      tft.print("1. TETRIS");
-      break;
-    case 1:
-      tft.setCursor(30, yPos + 2);
-      tft.print("2. PACMAN");
-      break;
-    case 2:
-      tft.setCursor(30, yPos + 2);
-      tft.print("3. DODGE MARIO");
-      break;
-    case 3:
-    tft.setCursor(30, yPos + 2);
-    tft.print("4. SNAKE");
-    break;
-  }
+  tft.setCursor(15, yPos + 2);
+  tft.print(gameNames[gameIndex]);
 }
 
 void handleMenu() {
+  int x = analogRead(joyX);
   int y = analogRead(joyY);
   
   // Navigate menu
   if (millis() - lastMenuMove > MENU_DELAY) {
+    // Up/Down navigation within page
     if (y > 512 + JOY_THRESHOLD) {  // Up
       int oldSelection = menuSelection;
       menuSelection--;
-      if (menuSelection < 0) menuSelection = NUM_GAMES - 1;
       
-      // Only redraw the affected items
-      drawMenuItem(oldSelection);
-      drawMenuItem(menuSelection);
+      // Handle page wrapping
+      if (menuSelection < 0) {
+        menuSelection = NUM_GAMES - 1;
+        currentPage = NUM_PAGES - 1;
+        drawMenu();  // Redraw entire menu for page change
+      } else if (menuSelection < currentPage * GAMES_PER_PAGE) {
+        // Moved to previous page
+        currentPage--;
+        drawMenu();  // Redraw entire menu for page change
+      } else {
+        // Same page, just update items
+        drawMenuItem(oldSelection);
+        drawMenuItem(menuSelection);
+      }
       
       lastMenuMove = millis();
+      
     } else if (y < 512 - JOY_THRESHOLD) {  // Down
       int oldSelection = menuSelection;
       menuSelection++;
-      if (menuSelection >= NUM_GAMES) menuSelection = 0;
       
-      // Only redraw the affected items
-      drawMenuItem(oldSelection);
-      drawMenuItem(menuSelection);
+      // Handle page wrapping
+      if (menuSelection >= NUM_GAMES) {
+        menuSelection = 0;
+        currentPage = 0;
+        drawMenu();  // Redraw entire menu for page change
+      } else if (menuSelection >= (currentPage + 1) * GAMES_PER_PAGE) {
+        // Moved to next page
+        currentPage++;
+        drawMenu();  // Redraw entire menu for page change
+      } else {
+        // Same page, just update items
+        drawMenuItem(oldSelection);
+        drawMenuItem(menuSelection);
+      }
       
       lastMenuMove = millis();
+    }
+    
+    // Left/Right page navigation
+    if (x > 512 + JOY_THRESHOLD) {  // Left - previous page
+      if (currentPage > 0) {
+        currentPage--;
+        menuSelection = currentPage * GAMES_PER_PAGE;
+        drawMenu();
+        lastMenuMove = millis();
+      }
+      
+    } else if (x < 512 - JOY_THRESHOLD) {  // Right - next page
+      if (currentPage < NUM_PAGES - 1) {
+        currentPage++;
+        menuSelection = currentPage * GAMES_PER_PAGE;
+        drawMenu();
+        lastMenuMove = millis();
+      }
     }
   }
   
@@ -150,6 +216,10 @@ void handleMenu() {
         currentState = SNAKE;
         setupSnakeGame();
         break;
+      case 4:
+        currentState = BREAKOUT;
+        breakoutSetup();
+        break;
     }
   }
 }
@@ -162,7 +232,7 @@ void setup() {
   
   // Initialize display
   tft.initR(INITR_144GREENTAB);
-  tft.setRotation(4); // change to 4
+  tft.setRotation(4);
   
   // Show splash screen
   tft.fillScreen(ST7735_BLACK);
@@ -181,13 +251,6 @@ void setup() {
 }
 
 void loop() {
-  
-  // Serial.print("X: ");
-  // Serial.print(analogRead(joyX));
-  // Serial.print("\t");
-  // Serial.print("Y: ");
-  // Serial.println(analogRead(joyY));
-  
   switch (currentState) {
     case MENU:
       handleMenu();
@@ -195,7 +258,6 @@ void loop() {
       
     case TETRIS:
       tetrisLoop();
-      // Check if player wants to return to menu (implement in tetris)
       if (tetrisCheckReturnToMenu()) {
         currentState = MENU;
         drawMenu();
@@ -210,22 +272,26 @@ void loop() {
       }
       break;
 
-    // Add more game cases here
     case PACMAN:
-      if (pacmanGameLoop() == false)
-    {
-      currentState = MENU;
-      drawMenu();
-    }
+      if (pacmanGameLoop() == false) {
+        currentState = MENU;
+        drawMenu();
+      }
       break;
 
-   case SNAKE:
-    if (loopSnakeGame() == false)
-    {
-      currentState = MENU;
-      drawMenu();
-    }
+    case SNAKE:
+      if (loopSnakeGame() == false) {
+        currentState = MENU;
+        drawMenu();
+      }
       break;
-      
+    
+    case BREAKOUT:
+      breakoutLoop();
+      if (breakoutCheckReturnToMenu()) {
+        currentState = MENU;
+        drawMenu();
+      }
+      break;
   }
 }
