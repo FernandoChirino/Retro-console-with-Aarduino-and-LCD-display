@@ -79,11 +79,11 @@ retro-console/
 
 The games in this console are adapted from various open-source Arduino projects:
 
-- Tetris: 
+- Tetris: https://circuitdigest.com/microcontroller-projects/creating-tetris-game-with-arduino-and-oled-display
 - Pac-Man: [github.com/dlallan/pac-man-arduino](https://github.com/dlallan/pac-man-arduino/tree/master)
-- Dodge Mario: 
+- Dodge Mario: https://techcraftandhacks.in/esp32-joystick-game-oled-buzzer/
 - Snake: [github.com/TechsPassion/Arduino/Snake_Game.ino](https://github.com/TechsPassion/Arduino/blob/main/Snake_Game.ino)
-- Breakout: 
+- Breakout: https://www.hackster.io/javagoza/arduino-touch-breakout-game-eda113 
 - 2048: [github.com/peacheym/NeoPixel2048](https://github.com/peacheym/NeoPixel2048)
 
 All games have been modified and integrated into a unified console system with custom menu navigation, standardized controls, and optimized display rendering.
