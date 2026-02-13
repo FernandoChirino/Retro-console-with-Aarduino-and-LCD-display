@@ -4,7 +4,7 @@ A multi-game handheld console built with Arduino and ST7735 TFT display, featuri
 
 ## Hardware Requirements
 
-- Arduino board (Uno/Nano compatible)
+- Arduino MEGA board (Uno/Nano compatible)
 - ST7735 TFT Display (128x128, 1.44")
 - Analog joystick module
 - 2 push buttons
@@ -32,7 +32,8 @@ A multi-game handheld console built with Arduino and ST7735 TFT display, featuri
 3. **Dodge Mario** - Avoid falling obstacles
 4. **Snake** - Grow your snake without crashing
 5. **Breakout** - Break bricks with a paddle
-6. **Space Invaders** - (Coming soon)
+6. **2048** - Number tile puzzle game
+7. **Minesweeper** - Classic single player logic game
 
 ## Features
 
