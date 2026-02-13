@@ -6,6 +6,9 @@
 #include "src/pacman/global.h"
 #include "src/snake/SnakeGame.h"
 #include "src/breakout/breakout.h"
+#include "src/Game2048/definitions.h"
+#include "src/Game2048/Game2048.h"
+#include "src/minesweeper/minesweeper.h"
 
 // External functions from main.cpp
 extern void pacmanGameSetup();
@@ -25,6 +28,9 @@ const int button = 4;
 // Initialize display
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 
+// Create game object for 2048
+Game2048 game2048(TFT_CS, TFT_DC, TFT_RST);
+
 // Game state machine
 enum GameState {
   MENU,
@@ -33,12 +39,13 @@ enum GameState {
   DODGEBLOCK,
   SNAKE,
   BREAKOUT,
-  SPACE_INVADERS
+  _2048,
+  MINESWEEPER
 };
 
 GameState currentState = MENU;
 int menuSelection = 0;
-const int NUM_GAMES = 6;
+const int NUM_GAMES = 7;
 const int GAMES_PER_PAGE = 4;  // How many games to show per page
 int currentPage = 0;            // Current page index
 const int NUM_PAGES = (NUM_GAMES + GAMES_PER_PAGE - 1) / GAMES_PER_PAGE;  // Calculate total pages
@@ -54,7 +61,8 @@ const char* gameNames[] = {
   "3. DODGE MARIO",
   "4. SNAKE",
   "5. BREAKOUT",
-  "6. SPACE INVADER",
+  "6. 2048",
+  "7. MINESWEEPER"
 }; 
 
 void drawMenu() {
@@ -220,6 +228,15 @@ void handleMenu() {
         currentState = BREAKOUT;
         breakoutSetup();
         break;
+      case 5:
+        currentState = _2048;
+        game2048.begin();
+        break;
+
+      case 6:
+        currentState = MINESWEEPER;
+        setupMinesweeper();
+        break;
     }
   }
 }
@@ -292,6 +309,20 @@ void loop() {
         currentState = MENU;
         drawMenu();
       }
+      break;
+
+    case _2048:
+      if (game2048.update() == false){
+      currentState = MENU;
+      drawMenu();
+    }
+      break;
+
+    case MINESWEEPER:
+      if (loopMinesweeper() == false){
+      currentState = MENU;
+      drawMenu();
+    }
       break;
   }
 }

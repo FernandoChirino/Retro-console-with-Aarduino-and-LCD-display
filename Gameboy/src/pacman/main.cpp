@@ -364,7 +364,12 @@ bool running() {
       InfoBarData::pauseLabel);
     
     // wait for joystick click to resume game
-    while (!con.buttonTriggered()) {}
+    while (!con.buttonTriggered()) {
+
+      if (digitalRead(BUTTON_PIN) == LOW) {
+        return false;  // Signal to exit
+      }
+    }
   
     // redraw top bar
     drawScoreBar();
@@ -383,7 +388,11 @@ bool running() {
       drawGameOver(false);
     
     // click joystick to play again
-    while (!con.buttonTriggered()) {} 
+    while (!con.buttonTriggered()) {
+      if (digitalRead(BUTTON_PIN) == LOW) {
+        return false;  // Signal to exit
+      }
+    } 
     restart();
   }
 

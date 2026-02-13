@@ -24,6 +24,7 @@ boolean noBricks();
 void setBrick(int wall[], uint8_t x, uint8_t y);
 void unsetBrick(int wall[], uint8_t x, uint8_t y);
 boolean isBrickIn(int wall[], uint8_t x, uint8_t y);
+uint16_t getBrickColor(int row, uint8_t health);
 
 // Color definitions
 #define BLACK   0x0000
@@ -34,6 +35,8 @@ boolean isBrickIn(int wall[], uint8_t x, uint8_t y);
 #define MAGENTA 0xF81F
 #define YELLOW  0xFFE0
 #define WHITE   0xFFFF
+#define ORANGE  0xFD20
+#define DARK_RED 0x7800
 
 #define SCORE_SIZE 12
 
@@ -59,11 +62,11 @@ typedef struct game_type {
 
 game_type games[GAMES_NUMBER] = {
   // ballsize, playerwidth, playerheight, exponent, top, rows, columns, brickGap, lives, wall[8], initVelx, initVely
-  {4,  20, 3, 4, 15, 4, 6, 1, 3, {0xFF, 0xDB, 0xDB, 0xFF, 0x00, 0x00, 0x00, 0x00}, 12, -12},
-  {4,  18, 3, 4, 15, 5, 6, 1, 3, {0xFF, 0xAA, 0xFF, 0xAA, 0xFF, 0x00, 0x00, 0x00}, 14, -14},
-  {4,  16, 3, 4, 15, 6, 7, 1, 3, {0xFF, 0xFF, 0xAA, 0xAA, 0xFF, 0xFF, 0x00, 0x00}, 16, -16},
-  {3,  15, 3, 4, 15, 6, 8, 1, 3, {0xFF, 0xFF, 0xFF, 0xAA, 0xAA, 0xFF, 0x00, 0x00}, 18, -18},
-  {3,  14, 3, 4, 15, 8, 8, 1, 3, {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 20, -20}
+  {4,  20, 3, 4, 15, 4, 6, 1, 3, {0xFF, 0xDB, 0xDB, 0xFF, 0x00, 0x00, 0x00, 0x00}, 13, -13},  // Reduced from 12 to 10
+  {4,  18, 3, 4, 15, 5, 6, 1, 3, {0xFF, 0xAA, 0xFF, 0xAA, 0xFF, 0x00, 0x00, 0x00}, 13, -13},  // Reduced from 14 to 11
+  {4,  16, 3, 4, 15, 6, 7, 1, 3, {0xFF, 0xFF, 0xAA, 0xAA, 0xFF, 0xFF, 0x00, 0x00}, 15, -15},  // Reduced from 16 to 13
+  {3,  15, 3, 4, 15, 6, 8, 1, 3, {0xFF, 0xFF, 0xFF, 0xAA, 0xAA, 0xFF, 0x00, 0x00}, 17, -17},  // Reduced from 18 to 14
+  {3,  14, 3, 4, 15, 8, 8, 1, 3, {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 19, -19}   // Reduced from 20 to 16
 };
 
 typedef struct game_state_type {
@@ -76,6 +79,7 @@ typedef struct game_state_type {
   int playerx;
   int playerxold;
   int wallState[8];
+  uint8_t brickHealth[8][8];  // Health for each brick (max 8x8 grid)
   int score;
   int remainingLives;
   int bottom;
@@ -105,8 +109,12 @@ void setupState() {
   breakoutState.brickwidth = tft.width() / currentGame->columns;
   breakoutState.brickheight = (tft.height() - SCORE_SIZE - 20) / 12;
   
+  // Initialize wall state and brick health
   for (int i = 0; i < currentGame->rows; i++) {
     breakoutState.wallState[i] = 0;
+    for (int j = 0; j < 8; j++) {
+      breakoutState.brickHealth[i][j] = 0;
+    }
   }
   
   breakoutState.playerx = tft.width() / 2 - currentGame->playerwidth / 2;
@@ -130,8 +138,32 @@ void updateLives(int lives, int remainingLives) {
   }
 }
 
+// Get brick color based on row and health
+uint16_t getBrickColor(int row, uint8_t health) {
+  // Base colors for each row
+  uint16_t baseColors[] = {RED, RED, BLUE, BLUE, YELLOW, YELLOW, GREEN, GREEN};
+  
+  // If health is 1, return base color
+  if (health == 1) {
+    return baseColors[row];  
+
+  }
+  // If health is 2, return darker/different shade
+  else if (health == 2) {
+    if (row == 0 || row == 1) return DARK_RED;  // Darker red
+    if (row == 2 || row == 3) return CYAN;      // Cyan instead of blue
+    if (row == 4 || row == 5) return ORANGE;    // Orange instead of yellow
+    if (row == 6 || row == 7) return MAGENTA;   // Magenta instead of green
+  }
+  // If health is 3, return white or brightest color
+  else if (health >= 3) {
+    return WHITE;  
+  }
+  
+  return baseColors[row];
+}
+
 void setupWall() {
-  int colors[] = {RED, RED, BLUE, BLUE, YELLOW, YELLOW, GREEN, GREEN};
   breakoutState.walltop = currentGame->top + SCORE_SIZE;
   breakoutState.wallbottom = breakoutState.walltop + currentGame->rows * breakoutState.brickheight;
   
@@ -139,7 +171,20 @@ void setupWall() {
     for (int j = 0; j < currentGame->columns; j++) {
       if (isBrickIn(currentGame->wall, j, i)) {
         setBrick(breakoutState.wallState, j, i);
-        drawBrick(j, i, colors[i]);
+        
+        // Set brick health based on row
+        // Top 2 rows (0-1): 3 hits
+        // Middle 2 rows (2-3): 2 hits
+        // Bottom rows (4+): 1 hit
+        if (i <= 1) {
+          breakoutState.brickHealth[i][j] = 3;
+        } else if (i <= 3) {
+          breakoutState.brickHealth[i][j] = 2;
+        } else {
+          breakoutState.brickHealth[i][j] = 1;
+        }
+        
+        drawBrick(j, i, getBrickColor(i, breakoutState.brickHealth[i][j]));
       }
     }
   }
@@ -204,6 +249,14 @@ void waitForButton() {
   
   // Wait for button press (not joystick button)
   while (digitalRead(button) == HIGH) {
+
+        // Check if joystick button is pressed to return to menu during gameplay
+    if (digitalRead(joyButton) == LOW) {
+      delay(300);
+      breakoutReturnToMenu = true;
+      return;
+    }
+
     delay(10);
   }
   delay(300);
@@ -296,14 +349,30 @@ int checkCornerCollision(uint16_t x, uint16_t y) {
 }
 
 void hitBrick(int xBrick, int yBrickRow) {
-  breakoutState.score += pointsForRow[yBrickRow];
-  drawBrick(xBrick, yBrickRow, WHITE);
-  delay(16);
-  drawBrick(xBrick, yBrickRow, BLUE);
-  delay(8);
-  drawBrick(xBrick, yBrickRow, backgroundColor);
-  unsetBrick(breakoutState.wallState, xBrick, yBrickRow);
-  updateScore(breakoutState.score);
+  // Reduce brick health
+  if (breakoutState.brickHealth[yBrickRow][xBrick] > 0) {
+    breakoutState.brickHealth[yBrickRow][xBrick]--;
+    
+    // Add score (less points for each hit on multi-hit bricks)
+    breakoutState.score += pointsForRow[yBrickRow];
+    
+    // Visual feedback
+    drawBrick(xBrick, yBrickRow, WHITE);
+    delay(16);
+    
+    if (breakoutState.brickHealth[yBrickRow][xBrick] > 0) {
+      // Brick still has health, redraw with appropriate color
+      drawBrick(xBrick, yBrickRow, getBrickColor(yBrickRow, breakoutState.brickHealth[yBrickRow][xBrick]));
+    } else {
+      // Brick destroyed
+      drawBrick(xBrick, yBrickRow, BLUE);
+      delay(8);
+      drawBrick(xBrick, yBrickRow, backgroundColor);
+      unsetBrick(breakoutState.wallState, xBrick, yBrickRow);
+    }
+    
+    updateScore(breakoutState.score);
+  }
 }
 
 void checkBorderCollision(uint16_t x, uint16_t y) {
@@ -460,9 +529,10 @@ void breakoutLoop() {
   breakoutState.ballxold = breakoutState.ballx;
   breakoutState.ballyold = breakoutState.bally;
   
-  breakoutState.velx = (12 + (breakoutState.score >> 4)) * 
+  // Reduced speed increase rate (was >>4, now >>5 for slower acceleration)
+  breakoutState.velx = (10 + (breakoutState.score >> 5)) * 
                        ((breakoutState.velx > 0) - (breakoutState.velx < 0));
-  breakoutState.vely = (12 + (breakoutState.score >> 4)) * 
+  breakoutState.vely = (10 + (breakoutState.score >> 5)) * 
                        ((breakoutState.vely > 0) - (breakoutState.vely < 0));
   
   if (noBricks() && breakoutLevel < GAMES_NUMBER - 1) {
@@ -477,7 +547,7 @@ void breakoutLoop() {
     }
   }
   
-  delay(10);
+  delay(15);  // Increased from 10 to 15 for slower overall game speed
 }
 
 bool breakoutCheckReturnToMenu() {

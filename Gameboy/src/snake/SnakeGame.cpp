@@ -16,7 +16,7 @@
 #define PushButton 8
 
 // Game settings
-#define SNAKE_BLOCK_SIZE 4  // Larger blocks for better visibility
+#define SNAKE_BLOCK_SIZE 8  // Larger blocks for better visibility
 #define MAX_SNAKE_LENGTH 64
 #define HEADER_HEIGHT 12
 
@@ -163,10 +163,10 @@ bool loopSnakeGame() {
   // Read joystick
   int xVal = analogRead(JOY_X);
   int yVal = analogRead(JOY_Y);
-  if (xVal < 400 && currentDirection != LEFT) currentDirection = RIGHT;
-  else if (xVal > 600 && currentDirection != RIGHT) currentDirection = LEFT;
-  else if (yVal < 400 && currentDirection != UP) currentDirection = DOWN;
-  else if (yVal > 600 && currentDirection != DOWN) currentDirection = UP;
+  if (xVal < 450 && currentDirection != LEFT) currentDirection = RIGHT;
+  else if (xVal > 550 && currentDirection != RIGHT) currentDirection = LEFT;
+  else if (yVal < 450 && currentDirection != UP) currentDirection = DOWN;
+  else if (yVal > 550 && currentDirection != DOWN) currentDirection = UP;
 
   // Store old tail position before moving
   int oldTailX = snakeX[snakeLength - 1];
@@ -234,7 +234,7 @@ bool loopSnakeGame() {
     lastTime = currentTime;
   }
 
-  delay(100);
+  delay(150);
   return true;
 }
 
